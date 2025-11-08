@@ -24,19 +24,25 @@ model AgentInvocation {
   openPositions     Json
   toolCalls         Json?
   response          String
+
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId Int
 }
 
 model Account {
-  id             Int      @id @default(autoincrement())
-  name           String
-  totalReturn    Float    @default(0.0)
-  initialCapital Float    @default(10000)
-  availableCash  Float    @default(10000)
-  accountValue   Float    @default(10000)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  model           String
+  invocationCount Int      @default(0)
+  totalReturn     Float    @default(0.0)
+  initialCapital  Float    @default(10000)
+  availableCash   Float    @default(10000)
+  accountValue    Float    @default(10000)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  startTime       DateTime @default(now())
 
-  positions Position[]
+  positions          Position[]
+  accountInvocations AgentInvocation[]
 }
 
 model Position {

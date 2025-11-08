@@ -1,15 +1,15 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { createPositionTool, closePositionTool } from "./tools";
+import { closePositionToolFactory, createPositionToolFactory } from "./tools";
 import { prisma } from "@/lib/prisma";
 import accountService from "@/service/AccountService";
 import { llm } from "../service/LLMService"
 
-export async function invokeAgent(invocationCount: number, startTime: number) {
+export async function invokeAgent(invocationCount: number, startTime: number, accountNo: number, model: string) {
 
     const minutesSinceStart = Math.floor((Date.now() - startTime) / 60000);
     const currentTime = new Date().toISOString();
 
-    const accountData = await accountService.getAccountData(1);
+    const accountData = await accountService.getAccountData(accountNo);
 
     if (!accountData) {
         throw new Error("Account not found");
@@ -47,8 +47,14 @@ export async function invokeAgent(invocationCount: number, startTime: number) {
         {openPositions}
     `);
 
+    if (!(model in llm)) {
+        throw new Error(`Unknown model: ${model}`);
+    }
 
-    const llmWithTools = llm.bindTools([createPositionTool, closePositionTool]);
+    const createPositionTool = createPositionToolFactory(accountNo);
+    const closePositionTool = closePositionToolFactory(accountNo);
+
+    const llmWithTools = llm[model as keyof typeof llm].bindTools([createPositionTool, closePositionTool]);
 
     const chain = prompt.pipe(llmWithTools);
 
@@ -89,11 +95,12 @@ export async function invokeAgent(invocationCount: number, startTime: number) {
             accountValue,
             availableCash,
             totalReturn,
-            openPositions: JSON.stringify(openPositions),
+            openPositions,
             toolCalls: toolCalls ? JSON.parse(JSON.stringify(toolCalls)) : undefined,
             response: result.text,
+            accountId: accountNo,
         }
-    })
+    });
 
     if (toolCalls?.length) {
         for (const toolCall of toolCalls) {
