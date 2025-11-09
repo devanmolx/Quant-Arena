@@ -5,6 +5,7 @@ import { ModelBadge } from "./ModelBadge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion"
 import { AccountType } from "@/types/types";
+import { format } from "date-fns"
 
 interface PerformanceChartProps {
   accounts: AccountType[];
@@ -23,7 +24,6 @@ const getModelColor = (modelName: string): string => {
 const transformAccountData = (accounts: AccountType[]) => {
   const timestampMap: Record<string, any> = {};
 
-  // Group values by timestamp
   for (const account of accounts) {
     const modelName = account.model;
     for (const inv of account.accountInvocations) {
@@ -33,13 +33,11 @@ const transformAccountData = (accounts: AccountType[]) => {
     }
   }
 
-  // Sort by time
   const sorted = Object.values(timestampMap).sort(
     (a: any, b: any) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  // Make data continuous (fill missing values)
   const models = accounts.map((acc) => acc.model);
   const lastValues: Record<string, number> = {};
 
@@ -57,6 +55,31 @@ const transformAccountData = (accounts: AccountType[]) => {
   return filledData;
 };
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card p-3 rounded-md border border-border text-foreground">
+        <div className="mb-1 text-xs">{format(new Date(label), "MMM dd HH:mm")}</div>
+        <div className=" flex flex-col gap-1">
+          {payload.map((p: any) => (
+            <div key={p.name} className="flex items-center gap-2">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[15px] font-bold"
+                style={{ backgroundColor: getModelColor(p.name), color: "hsl(var(--background))" }}
+              >
+                {p.name.split("-")[0].charAt(0)}
+              </div>
+              <span className="text-[15px] font-bold">{p.name}</span>
+              <span className="text-[15px] font-bold">${p.value.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 export function PerformanceChart({ accounts }: PerformanceChartProps) {
 
@@ -69,9 +92,6 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
   const sortedAccounts = [...accounts].sort((a, b) => b.totalReturn - a.totalReturn);
   const highest = sortedAccounts[0];
   const lowest = sortedAccounts[sortedAccounts.length - 1];
-
-  console.log(data);
-  console.log(models);
 
   return (
     <motion.div
@@ -87,26 +107,24 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
               <h2 className="text-xl font-bold text-foreground">Total Account Value</h2>
               <Tabs defaultValue="all" className="w-auto">
                 <TabsList className="bg-secondary">
-                  <TabsTrigger value="all" className="text-xs">ALL</TabsTrigger>
-                  <TabsTrigger value="72h" className="text-xs">72H</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">HIGHEST:</span>
+                <span className="text-[12px] text-muted-foreground">HIGHEST:</span>
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
                     style={{ backgroundColor: getModelColor(highest.model), color: 'hsl(var(--background))' }}
                   >
                     {highest.model.split('-')[0].charAt(0)}
                   </div>
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-[12px] font-bold text-foreground">
                     ${highest.accountValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-xs font-bold text-profit">
+                  <span className="text-[12px] font-bold text-profit">
                     +{highest.totalReturn.toFixed(2)}%
                   </span>
                 </div>
@@ -115,18 +133,18 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
               <div className="h-4 w-px bg-border" />
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">LOWEST:</span>
+                <span className="text-[12px] text-muted-foreground">LOWEST:</span>
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
                     style={{ backgroundColor: getModelColor(lowest.model), color: 'hsl(var(--background))' }}
                   >
                     {lowest.model.split('-')[0].charAt(0)}
                   </div>
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-[12px] font-bold text-foreground">
                     ${lowest.accountValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-xs font-bold text-loss">
+                  <span className="text-[12px] font-bold text-loss">
                     {lowest.totalReturn.toFixed(2)}%
                   </span>
                 </div>
@@ -144,22 +162,17 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
                 stroke="hsl(var(--muted-foreground))"
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 tickLine={false}
+                tickFormatter={(timestamp) => format(new Date(timestamp), "MMM dd HH:mm")}
               />
               <YAxis
                 stroke="hsl(var(--muted-foreground))"
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 tickLine={false}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                domain={['dataMin - 50', 'dataMax + 50']}
+                tickFormatter={(value) => `$${(value / 1000).toFixed(2)}k`}
+                domain={["dataMin - 50", "dataMax + 50"]}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                  color: "hsl(var(--foreground))",
-                }}
-                formatter={(value: any) => [`$${value.toLocaleString()}`, ""]}
+                content={<CustomTooltip />}
               />
               {models.map((model) => (
                 <Line
@@ -175,7 +188,7 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
             </LineChart>
           </ResponsiveContainer>
 
-          <div className="absolute top-12 right-12 flex flex-col gap-2">
+          {/* <div className="absolute top-12 right-12 flex flex-col gap-2">
             {accounts.map((account, index) => (
               <ModelBadge
                 key={account.model}
@@ -186,7 +199,7 @@ export function PerformanceChart({ accounts }: PerformanceChartProps) {
                 index={index}
               />
             ))}
-          </div>
+          </div> */}
         </div>
       </Card>
     </motion.div>
