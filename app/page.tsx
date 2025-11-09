@@ -1,65 +1,66 @@
-import Image from "next/image";
+import { ModelCard } from "@/components/ModelCard";
+import { PerformanceChart } from "@/components/PerformanceChart";
+import { PositionsTable } from "@/components/PositionsTable";
+import { CryptoPriceBar } from "@/components/CryptoPriceBar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { mockAccounts, mockPositions, generateChartData, modelColors, mockCryptoPrices } from "@/lib/mockData";
+import Header from "@/components/Header";
 
-export default function Home() {
+const Index = () => {
+
+  // Use mock data
+  const accounts = mockAccounts;
+  const positions = mockPositions;
+  const chartData = generateChartData();
+  const models = Object.keys(modelColors);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div>
+      <Header />
+      <CryptoPriceBar prices={mockCryptoPrices} />
+
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        <PerformanceChart
+          data={chartData}
+          models={models}
+          modelColors={modelColors}
+          accounts={accounts}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <Tabs defaultValue="positions" className="w-full">
+          <TabsList className="bg-secondary w-full justify-start border-b border-border rounded-none h-auto p-0">
+            <TabsTrigger value="positions" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              Positions
+            </TabsTrigger>
+            <TabsTrigger value="models" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              Model Summary
+            </TabsTrigger>
+            <TabsTrigger value="trades" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              Completed Trades
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="positions" className="mt-6">
+            <PositionsTable positions={positions} />
+          </TabsContent>
+
+          <TabsContent value="models" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {accounts.map((account, index) => (
+                <ModelCard key={account.id} account={account} index={index} />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="trades" className="mt-6">
+            <div className="text-center py-12 text-muted-foreground">
+              No completed trades to display
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
-}
+};
+
+export default Index;

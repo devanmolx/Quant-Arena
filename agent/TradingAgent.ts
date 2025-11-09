@@ -20,6 +20,9 @@ export async function invokeAgent(invocationCount: number, startTime: number, ac
     const { totalReturn, availableCash, accountValue, positions: openPositions } = accountData;
 
     const BTCData = await accountService.getFormattedData("BTCUSDT");
+    const ETHData = await accountService.getFormattedData("ETHUSDT");
+    const SOLData = await accountService.getFormattedData("SOLUSDT");
+    const XRPData = await accountService.getFormattedData("XRPUSDT");
 
     const prompt = ChatPromptTemplate.fromTemplate(`
         You are an expert trader. You were given $10000 dollars to trade with. 
@@ -37,6 +40,9 @@ export async function invokeAgent(invocationCount: number, startTime: number, ac
 
         MARKET DATA (ordered oldest → newest):
         {BTCData}
+        {ETHData}
+        {SOLData}
+        {XRPData}
 
         ACCOUNT INFO:
         Total Return (%): {totalReturn}
@@ -63,6 +69,9 @@ export async function invokeAgent(invocationCount: number, startTime: number, ac
         currentTime,
         invocationCount,
         BTCData: JSON.stringify(BTCData, null, 2),
+        ETHData: JSON.stringify(ETHData, null, 2),
+        SOLData: JSON.stringify(SOLData, null, 2),
+        XRPData: JSON.stringify(XRPData, null, 2),
         totalReturn,
         availableCash,
         accountValue,
@@ -74,6 +83,9 @@ export async function invokeAgent(invocationCount: number, startTime: number, ac
         currentTime,
         invocationCount,
         BTCData: JSON.stringify(BTCData, null, 2),
+        ETHData: JSON.stringify(ETHData, null, 2),
+        SOLData: JSON.stringify(SOLData, null, 2),
+        XRPData: JSON.stringify(XRPData, null, 2),
         totalReturn,
         availableCash,
         accountValue,
