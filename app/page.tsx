@@ -1,18 +1,35 @@
+"use client"
 import { ModelCard } from "@/components/ModelCard";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { PositionsTable } from "@/components/PositionsTable";
 import { CryptoPriceBar } from "@/components/CryptoPriceBar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockAccounts, mockPositions, generateChartData, modelColors, mockCryptoPrices } from "@/lib/mockData";
+import { mockCryptoPrices } from "@/lib/mockData";
 import Header from "@/components/Header";
+import { useContext } from "react";
+import { AccountContext } from "@/context/AccountContext/AccountContext";
 
 const Index = () => {
 
-  // Use mock data
-  const accounts = mockAccounts;
-  const positions = mockPositions;
-  const chartData = generateChartData();
-  const models = Object.keys(modelColors);
+  const { accounts } = useContext(AccountContext);
+
+  const openPositions = accounts.flatMap((account) =>
+    account.positions
+      .filter((pos) => pos.isOpen)
+      .map((pos) => ({
+        ...pos,
+        modelName: account.model,
+      }))
+  ) || [];
+
+  const closePositions = accounts.flatMap((account) =>
+    account.positions
+      .filter((pos) => !pos.isOpen)
+      .map((pos) => ({
+        ...pos,
+        modelName: account.model,
+      }))
+  ) || [];
 
   return (
     <div>
@@ -20,12 +37,7 @@ const Index = () => {
       <CryptoPriceBar prices={mockCryptoPrices} />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <PerformanceChart
-          data={chartData}
-          models={models}
-          modelColors={modelColors}
-          accounts={accounts}
-        />
+        <PerformanceChart accounts={accounts} />
 
         <Tabs defaultValue="positions" className="w-full">
           <TabsList className="bg-secondary w-full justify-start border-b border-border rounded-none h-auto p-0">
@@ -41,7 +53,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="positions" className="mt-6">
-            <PositionsTable positions={positions} />
+            <PositionsTable accounts={accounts} onlyOpen={true} />
           </TabsContent>
 
           <TabsContent value="models" className="mt-6">
@@ -53,9 +65,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="trades" className="mt-6">
-            <div className="text-center py-12 text-muted-foreground">
-              No completed trades to display
-            </div>
+            <PositionsTable accounts={accounts} onlyOpen={false} />
           </TabsContent>
         </Tabs>
       </main>

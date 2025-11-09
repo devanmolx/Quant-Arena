@@ -1,13 +1,9 @@
 "use client"
 import { motion } from "framer-motion";
-import { Position } from "@/types/trading";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-interface PositionsTableProps {
-  positions: Position[];
-}
+import { AccountType } from "@/types/types";
 
 const getModelColor = (modelName: string): string => {
   const name = modelName.toLowerCase();
@@ -19,7 +15,18 @@ const getModelColor = (modelName: string): string => {
   return "hsl(var(--primary))";
 };
 
-export function PositionsTable({ positions }: PositionsTableProps) {
+export function PositionsTable({ accounts, onlyOpen }: { accounts: AccountType[], onlyOpen: boolean }) {
+
+  const positions =
+    accounts.flatMap((account) =>
+      account.positions
+        .filter((pos) => (onlyOpen ? pos.isOpen : true))
+        .map((pos) => ({
+          ...pos,
+          modelName: account.model,
+        })))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

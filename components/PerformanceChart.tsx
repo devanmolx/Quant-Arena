@@ -1,16 +1,13 @@
 "use client"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card } from "@/components/ui/card";
-import { ChartDataPoint } from "@/types/trading";
 import { ModelBadge } from "./ModelBadge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion"
+import { AccountType } from "@/types/types";
 
 interface PerformanceChartProps {
-  data: ChartDataPoint[];
-  models: string[];
-  modelColors: Record<string, string>;
-  accounts: Array<{ modelName: string; accountValue: number; totalReturn: number }>;
+  accounts: AccountType[];
 }
 
 const getModelColor = (modelName: string): string => {
@@ -23,11 +20,38 @@ const getModelColor = (modelName: string): string => {
   return "hsl(var(--primary))";
 };
 
-export function PerformanceChart({ data, models, modelColors, accounts }: PerformanceChartProps) {
-  // Get highest and lowest performing models
+const transformAccountData = (accounts: AccountType[]) => {
+  const timestampMap: Record<string, any> = {};
+
+  for (const account of accounts) {
+    const modelName = account.model;
+    for (const inv of account.accountInvocations) {
+      const timestamp = inv.timestamp;
+      if (!timestampMap[timestamp]) timestampMap[timestamp] = { timestamp };
+      timestampMap[timestamp][modelName] = inv.accountValue;
+    }
+  }
+
+  return Object.values(timestampMap).sort(
+    (a: any, b: any) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+};
+
+export function PerformanceChart({ accounts }: PerformanceChartProps) {
+
+  if (!accounts || accounts.length === 0)
+    return <p className="text-center text-muted-foreground p-4">No data available.</p>;
+
+  const data = transformAccountData(accounts);
+  const models = accounts.map((acc) => acc.model);
+
   const sortedAccounts = [...accounts].sort((a, b) => b.totalReturn - a.totalReturn);
   const highest = sortedAccounts[0];
   const lowest = sortedAccounts[sortedAccounts.length - 1];
+
+  console.log(data);
+  console.log(models);
 
   return (
     <motion.div
@@ -55,9 +79,9 @@ export function PerformanceChart({ data, models, modelColors, accounts }: Perfor
                 <div className="flex items-center gap-2">
                   <div
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                    style={{ backgroundColor: getModelColor(highest.modelName), color: 'hsl(var(--background))' }}
+                    style={{ backgroundColor: getModelColor(highest.model), color: 'hsl(var(--background))' }}
                   >
-                    {highest.modelName.split('-')[0].charAt(0)}
+                    {highest.model.split('-')[0].charAt(0)}
                   </div>
                   <span className="text-xs font-bold text-foreground">
                     ${highest.accountValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -75,9 +99,9 @@ export function PerformanceChart({ data, models, modelColors, accounts }: Perfor
                 <div className="flex items-center gap-2">
                   <div
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                    style={{ backgroundColor: getModelColor(lowest.modelName), color: 'hsl(var(--background))' }}
+                    style={{ backgroundColor: getModelColor(lowest.model), color: 'hsl(var(--background))' }}
                   >
-                    {lowest.modelName.split('-')[0].charAt(0)}
+                    {lowest.model.split('-')[0].charAt(0)}
                   </div>
                   <span className="text-xs font-bold text-foreground">
                     ${lowest.accountValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -106,6 +130,7 @@ export function PerformanceChart({ data, models, modelColors, accounts }: Perfor
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 tickLine={false}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                domain={['dataMin - 50', 'dataMax + 50']}
               />
               <Tooltip
                 contentStyle={{
@@ -133,10 +158,10 @@ export function PerformanceChart({ data, models, modelColors, accounts }: Perfor
           <div className="absolute top-12 right-12 flex flex-col gap-2">
             {accounts.map((account, index) => (
               <ModelBadge
-                key={account.modelName}
-                name={account.modelName}
+                key={account.model}
+                name={account.model}
                 value={account.accountValue}
-                color={getModelColor(account.modelName)}
+                color={getModelColor(account.model)}
                 change={account.totalReturn}
                 index={index}
               />

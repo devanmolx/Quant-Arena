@@ -1,11 +1,11 @@
 "use client"
 import { motion } from "framer-motion";
-import { Account } from "@/types/trading";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
+import { AccountType } from "@/types/types";
 
 interface ModelCardProps {
-  account: Account;
+  account: AccountType;
   index: number;
 }
 
@@ -21,7 +21,7 @@ const getModelColor = (modelName: string): string => {
 
 export function ModelCard({ account, index }: ModelCardProps) {
   const isPositive = account.totalReturn >= 0;
-  const modelColor = getModelColor(account.modelName);
+  const modelColor = getModelColor(account.model);
 
   return (
     <motion.div
@@ -33,7 +33,7 @@ export function ModelCard({ account, index }: ModelCardProps) {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-foreground" style={{ color: modelColor }}>
-              {account.modelName}
+              {account.model}
             </h3>
             <p className="text-sm text-muted-foreground">AI Trading Model</p>
           </div>
