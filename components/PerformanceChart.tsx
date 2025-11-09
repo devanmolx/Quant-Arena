@@ -23,6 +23,7 @@ const getModelColor = (modelName: string): string => {
 const transformAccountData = (accounts: AccountType[]) => {
   const timestampMap: Record<string, any> = {};
 
+  // Group values by timestamp
   for (const account of accounts) {
     const modelName = account.model;
     for (const inv of account.accountInvocations) {
@@ -32,11 +33,30 @@ const transformAccountData = (accounts: AccountType[]) => {
     }
   }
 
-  return Object.values(timestampMap).sort(
+  // Sort by time
+  const sorted = Object.values(timestampMap).sort(
     (a: any, b: any) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
+
+  // Make data continuous (fill missing values)
+  const models = accounts.map((acc) => acc.model);
+  const lastValues: Record<string, number> = {};
+
+  const filledData = sorted.map((entry) => {
+    const filled: any = { timestamp: entry.timestamp };
+    for (const model of models) {
+      if (entry[model] !== undefined) {
+        lastValues[model] = entry[model];
+      }
+      filled[model] = lastValues[model] ?? null;
+    }
+    return filled;
+  });
+
+  return filledData;
 };
+
 
 export function PerformanceChart({ accounts }: PerformanceChartProps) {
 
