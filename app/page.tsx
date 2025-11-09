@@ -13,24 +13,6 @@ const Index = () => {
 
   const { accounts } = useContext(AccountContext);
 
-  const openPositions = accounts.flatMap((account) =>
-    account.positions
-      .filter((pos) => pos.isOpen)
-      .map((pos) => ({
-        ...pos,
-        modelName: account.model,
-      }))
-  ) || [];
-
-  const closePositions = accounts.flatMap((account) =>
-    account.positions
-      .filter((pos) => !pos.isOpen)
-      .map((pos) => ({
-        ...pos,
-        modelName: account.model,
-      }))
-  ) || [];
-
   return (
     <div>
       <Header />
