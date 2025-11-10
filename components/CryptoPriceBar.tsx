@@ -1,18 +1,11 @@
 "use client"
+import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 import { motion } from "framer-motion";
 
-interface CryptoPrice {
-  symbol: string;
-  name: string;
-  price: number;
-  icon: string;
-}
+export function CryptoPriceBar() {
 
-interface CryptoPriceBarProps {
-  prices: CryptoPrice[];
-}
+  const { prices } = useCryptoPrices();
 
-export function CryptoPriceBar({ prices }: CryptoPriceBarProps) {
   return (
     <div className="bg-secondary/50 border-b border-border py-3 overflow-x-auto">
       <div className="container mx-auto px-4">

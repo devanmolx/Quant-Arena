@@ -4,7 +4,6 @@ import { PerformanceChart } from "@/components/PerformanceChart";
 import { PositionsTable } from "@/components/PositionsTable";
 import { CryptoPriceBar } from "@/components/CryptoPriceBar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockCryptoPrices } from "@/lib/mockData";
 import Header from "@/components/Header";
 import { useContext } from "react";
 import { AccountContext } from "@/context/AccountContext/AccountContext";
@@ -16,7 +15,7 @@ const Index = () => {
   return (
     <div>
       <Header />
-      <CryptoPriceBar prices={mockCryptoPrices} />
+      <CryptoPriceBar />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <PerformanceChart accounts={accounts} />

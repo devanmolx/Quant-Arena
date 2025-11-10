@@ -132,6 +132,21 @@ class AccountService {
         const response = await axios.get(`${BINANCE_BASE_URL}/ticker/price?symbol=${symbol}`);
         return parseFloat(response.data.price);
     }
+
+    async getCurrentPrices(): Promise<Record<string, number>> {
+        const response = await axios.get(`${BINANCE_BASE_URL}/ticker/price`);
+        const data = response.data;
+
+        const pairs = ["BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT"];
+        const prices: Record<string, number> = {};
+
+        for (const pair of pairs) {
+            const item = data.find((x: any) => x.symbol === pair);
+            if (item) prices[pair] = parseFloat(item.price);
+        }
+
+        return prices;
+    }
 }
 
 const accountService = new AccountService();

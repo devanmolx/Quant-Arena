@@ -72,3 +72,10 @@ export interface AccountContextType {
     accounts: AccountType[],
     setAccounts: React.Dispatch<React.SetStateAction<AccountType[]>>
 }
+
+export interface CryptoPrice {
+    symbol: string;
+    name: string;
+    price: number;
+    icon: string;
+}
