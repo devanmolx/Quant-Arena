@@ -9,49 +9,52 @@ export function createPositionToolFactory(accountId: number) {
             const entryPrice = await accountService.getCurrentPrice(symbol);
             const marginRequired = (entryPrice * quantity) / leverage;
 
-            const account = await prisma.account.findUnique({ where: { id: accountId } });
-            if (!account) throw new Error(`Account ${accountId} not found`);
+            await prisma.$transaction(async (tx) => {
 
-            if (account.availableCash < marginRequired) {
-                throw new Error(`Insufficient cash. Need ${marginRequired}, have ${account.availableCash}`);
-            }
+                const account = await tx.account.findUnique({ where: { id: accountId } });
+                if (!account) throw new Error(`Account ${accountId} not found`);
 
-            const position = await prisma.position.create({
-                data: {
-                    symbol,
-                    side,
-                    entryPrice,
-                    quantity,
-                    leverage,
-                    isOpen: true,
-                    accountId,
-                    exit_plan: {
-                        create: {
-                            profitTarget,
-                            stopLoss,
-                            invalidationCondition,
+                if (account.availableCash < marginRequired) {
+                    throw new Error(`Insufficient cash. Need ${marginRequired}, have ${account.availableCash}`);
+                }
+
+                const position = await tx.position.create({
+                    data: {
+                        symbol,
+                        side,
+                        entryPrice,
+                        quantity,
+                        leverage,
+                        isOpen: true,
+                        accountId,
+                        exit_plan: {
+                            create: {
+                                profitTarget,
+                                stopLoss,
+                                invalidationCondition,
+                            },
                         },
                     },
-                },
-            });
+                });
 
-            await prisma.account.update({
-                where: { id: accountId },
-                data: { availableCash: account.availableCash - marginRequired },
-            });
+                await tx.account.update({
+                    where: { id: accountId },
+                    data: { availableCash: account.availableCash - marginRequired },
+                });
 
-            console.log(`✅ [Account ${accountId}] Opened ${side} ${symbol} at ${entryPrice}, qty=${quantity}, lev=${leverage}`);
+                console.log(`✅ [Account ${accountId}] Opened ${side} ${symbol} at ${entryPrice}, qty=${quantity}, lev=${leverage}`);
 
-            return {
-                status: "opened",
-                accountId,
-                symbol,
-                side,
-                quantity,
-                entryPrice,
-                leverage,
-                marginUsed: marginRequired,
-            };
+                return {
+                    status: "opened",
+                    accountId,
+                    symbol,
+                    side,
+                    quantity,
+                    entryPrice,
+                    leverage,
+                    marginUsed: marginRequired,
+                };
+            })
         },
         {
             name: "createPosition",
@@ -80,44 +83,48 @@ export function closePositionToolFactory(accountId: number) {
             const diff = parseFloat(((currentPrice - position.entryPrice) * position.quantity).toFixed(2));
             const pnl = position.side === "LONG" ? diff : -diff;
 
-            await prisma.position.update({
-                where: { id: position.id },
-                data: {
-                    pnl,
-                    isOpen: false,
+            await prisma.$transaction(async (tx) => {
+
+
+                await tx.position.update({
+                    where: { id: position.id },
+                    data: {
+                        pnl,
+                        isOpen: false,
+                        exitPrice: currentPrice,
+                        closedAt: new Date(),
+                    },
+                });
+
+                const account = await tx.account.findUnique({ where: { id: accountId } });
+                if (!account) throw new Error(`Account ${accountId} not found`);
+
+                const marginReleased = ((position.quantity * position.entryPrice) / position.leverage).toFixed(2);
+                const newCash = account.availableCash + parseFloat(marginReleased) + pnl;
+                const accountValue = account.accountValue + pnl;
+
+                const totalReturn = parseFloat(
+                    (((accountValue - account.initialCapital) / account.initialCapital) * 100).toFixed(2)
+                );
+
+                await tx.account.update({
+                    where: { id: accountId },
+                    data: { availableCash: newCash, totalReturn, accountValue },
+                });
+
+                console.log(`✅ [Account ${accountId}] Closed ${position.symbol} at ${currentPrice}. PnL: ${pnl.toFixed(2)}.`);
+
+                return {
+                    status: "closed",
+                    accountId,
+                    symbol: position.symbol,
                     exitPrice: currentPrice,
-                    closedAt: new Date(),
-                },
-            });
-
-            const account = await prisma.account.findUnique({ where: { id: accountId } });
-            if (!account) throw new Error(`Account ${accountId} not found`);
-
-            const marginReleased = ((position.quantity * position.entryPrice) / position.leverage).toFixed(2);
-            const newCash = account.availableCash + parseFloat(marginReleased) + pnl;
-            const accountValue = account.accountValue + pnl;
-
-            const totalReturn = parseFloat(
-                (((accountValue - account.initialCapital) / account.initialCapital) * 100).toFixed(2)
-            );
-
-            await prisma.account.update({
-                where: { id: accountId },
-                data: { availableCash: newCash, totalReturn, accountValue },
-            });
-
-            console.log(`✅ [Account ${accountId}] Closed ${position.symbol} at ${currentPrice}. PnL: ${pnl.toFixed(2)}.`);
-
-            return {
-                status: "closed",
-                accountId,
-                symbol: position.symbol,
-                exitPrice: currentPrice,
-                pnl: parseFloat(pnl.toFixed(2)),
-                newCash: parseFloat(newCash.toFixed(2)),
-                totalReturn,
-                accountValue,
-            };
+                    pnl: parseFloat(pnl.toFixed(2)),
+                    newCash: parseFloat(newCash.toFixed(2)),
+                    totalReturn,
+                    accountValue,
+                };
+            })
         },
         {
             name: "closePosition",
